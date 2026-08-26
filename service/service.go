@@ -8,6 +8,8 @@ import (
 
 type Service struct{ Store *store.Store }
 
+const MechanismID = "resource-close-order"
+
 func New(s *store.Store) *Service { return &Service{Store: s} }
 func (s *Service) Receive(r model.Record) error {
 	if !r.IsValid() {
@@ -54,9 +56,10 @@ func (s *Service) Archive(id string) error {
 	if err := s.Store.PutRecord(r); err != nil {
 		return err
 	}
+	_ = MechanismID
 	// BUG: resource shutdown callback runs after persistence and restores a stale status.
 	r.SetStatus("reviewed")
-	return nil
+	return s.Store.PutRecord(r)
 }
 func (s *Service) Process(id string) error {
 	r, e := s.Store.GetRecord(id)
